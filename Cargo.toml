@@ -1,6 +1,12 @@
 [package]
+authors = ["messense <messense@icloud.com>"]
 name = "unidiff"
 version = "0.1.0"
-authors = ["messense <messense@icloud.com>"]
 
 [dependencies]
+lazy_static = "0.1"
+regex = "0.1"
+clippy = { version = "^0.*", optional = true }
+
+[features]
+unstable = []
