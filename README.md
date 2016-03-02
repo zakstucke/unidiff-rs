@@ -17,6 +17,18 @@ unidiff = "0.1"
 
 Add ``extern crate unidiff`` to your crate root and your're good to go!
 
+## [Documentation](http://messense.github.io/unidiff-rs/unidiff/index.html)
+
+To generate crate documentation locally, run:
+
+```bash
+$ cargo doc
+```
+
+Then you will be able to open the documentation under ``target/doc/bosonnlp`` directory.
+
+Also you can read it [online](http://messense.github.io/unidiff-rs/unidiff/index.html).
+
 ## License
 
 This work is released under the MIT license. A copy of the license is provided in the [LICENSE](./LICENSE) file.
