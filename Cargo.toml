@@ -1,6 +1,13 @@
 [package]
 authors = ["messense <messense@icloud.com>"]
+description = "Unified diff parsing/metadata extraction library for Rust"
+documentation = "https://messense.github.io/unidiff-rs"
+homepage = "https://github.com/messense/unidiff-rs"
+keywords = ["diff", "git", "svn", "hg", "unified"]
+license = "MIT"
 name = "unidiff"
+readme = "README.md"
+repository = "https://github.com/messense/unidiff-rs"
 version = "0.1.0"
 
 [dependencies]
