@@ -112,6 +112,15 @@ impl fmt::Display for Hunk {
     }
 }
 
+impl IntoIterator for Hunk {
+    type Item = Line;
+    type IntoIter = ::std::vec::IntoIter<Line>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.lines.into_iter()
+    }
+}
+
 /// Patch updated file, contains a list of Hunks
 #[derive(Debug, Clone)]
 pub struct PatchedFile {
@@ -231,6 +240,15 @@ impl fmt::Display for PatchedFile {
     }
 }
 
+impl IntoIterator for PatchedFile {
+    type Item = Hunk;
+    type IntoIter = ::std::vec::IntoIter<Hunk>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.hunks.into_iter()
+    }
+}
+
 /// Unfied patchset
 #[derive(Debug, Clone)]
 pub struct PatchSet {
@@ -304,4 +322,13 @@ impl fmt::Display for PatchSet {
         let diff = self.files.iter().map(|f| f.to_string()).collect::<Vec<String>>().join("\n");
         write!(f, "{}", diff)
     }
+}
+
+impl IntoIterator for PatchSet {
+    type Item = PatchedFile;
+    type IntoIter = ::std::vec::IntoIter<PatchedFile>;
+
+        fn into_iter(self) -> Self::IntoIter {
+            self.files.into_iter()
+        }
 }
