@@ -27,7 +27,7 @@ const LINE_TYPE_EMPTY: &'static str = "\n";
 
 
 /// A diff line
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Line {
     pub source_line_no: Option<usize>,
     pub target_line_no: Option<usize>,
@@ -37,6 +37,16 @@ pub struct Line {
 }
 
 impl Line {
+    pub fn new<T: Into<String>>(value: T, line_type: T) -> Line {
+        Line {
+            source_line_no: Some(0usize),
+            target_line_no: Some(0usize),
+            diff_line_no: 0usize,
+            line_type: line_type.into(),
+            value: value.into(),
+        }
+    }
+
     pub fn is_added(&self) -> bool {
         LINE_TYPE_ADDED == &self.line_type
     }
@@ -57,7 +67,7 @@ impl fmt::Display for Line {
 }
 
 /// Each of the modified blocks of a file
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Hunk {
     pub added: usize,
     pub removed: usize,
@@ -72,6 +82,26 @@ pub struct Hunk {
 }
 
 impl Hunk {
+    pub fn new<T: Into<String>>(source_start: usize,
+                                source_length: usize,
+                                target_start: usize,
+                                target_length: usize,
+                                section_header: T)
+                                -> Hunk {
+        Hunk {
+            added: 0usize,
+            removed: 0usize,
+            source_start: source_start,
+            source_length: source_length,
+            target_start: target_start,
+            target_length: target_length,
+            section_header: section_header.into(),
+            lines: vec![],
+            source: vec![],
+            target: vec![],
+        }
+    }
+
     pub fn is_valid(&self) -> bool {
         self.source.len() == self.source_length && self.target.len() == self.target_length
     }
@@ -122,7 +152,7 @@ impl IntoIterator for Hunk {
 }
 
 /// Patch updated file, contains a list of Hunks
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PatchedFile {
     pub source_file: String,
     pub source_timestamp: Option<String>,
@@ -132,6 +162,26 @@ pub struct PatchedFile {
 }
 
 impl PatchedFile {
+    pub fn new<T: Into<String>>(source_file: T, target_file: T) -> PatchedFile {
+        PatchedFile {
+            source_file: source_file.into(),
+            target_file: target_file.into(),
+            source_timestamp: None,
+            target_timestamp: None,
+            hunks: vec![],
+        }
+    }
+
+    pub fn with_hunks<T: Into<String>>(source_file: T, target_file: T, hunks: Vec<Hunk>) -> PatchedFile {
+        PatchedFile {
+            source_file: source_file.into(),
+            target_file: target_file.into(),
+            source_timestamp: None,
+            target_timestamp: None,
+            hunks: hunks,
+        }
+    }
+
     pub fn path(&self) -> String {
         if self.source_file.starts_with("a/") && self.target_file.starts_with("b/") {
             return self.source_file[2..].to_owned();
@@ -250,7 +300,7 @@ impl IntoIterator for PatchedFile {
 }
 
 /// Unfied patchset
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PatchSet {
     files: Vec<PatchedFile>,
 }
@@ -328,7 +378,7 @@ impl IntoIterator for PatchSet {
     type Item = PatchedFile;
     type IntoIter = ::std::vec::IntoIter<PatchedFile>;
 
-        fn into_iter(self) -> Self::IntoIter {
-            self.files.into_iter()
-        }
+    fn into_iter(self) -> Self::IntoIter {
+        self.files.into_iter()
+    }
 }
