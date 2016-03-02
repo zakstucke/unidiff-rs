@@ -9,6 +9,7 @@ extern crate regex;
 extern crate lazy_static;
 
 use std::fmt;
+use std::error;
 
 use regex::Regex;
 
@@ -17,13 +18,42 @@ lazy_static! {
     static ref RE_SOURCE_FILENAME: Regex = Regex::new(r"^--- (?P<filename>[^\t\n]+)(?:\t(?P<timestamp>[^\n]+))?").unwrap();
     static ref RE_TARGET_FILENAME: Regex = Regex::new(r"^\+\+\+ (?P<filename>[^\t\n]+)(?:\t(?P<timestamp>[^\n]+))?").unwrap();
     static ref RE_HUNK_HEADER: Regex = Regex::new(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@[ ]?(.*)").unwrap();
-    static ref RE_HUNK_BODY_LINE: Regex = Regex::new(r"^(?P<line_type>[- \n\+\\])(?P<value>.*)").unwrap();
+    static ref RE_HUNK_BODY_LINE: Regex = Regex::new(r"^(?P<line_type>[- \n\+\\]?)(?P<value>.*)").unwrap();
 }
 
-const LINE_TYPE_ADDED: &'static str = "+";
-const LINE_TYPE_REMOVED: &'static str = "-";
-const LINE_TYPE_CONTEXT: &'static str = " ";
-const LINE_TYPE_EMPTY: &'static str = "\n";
+pub const LINE_TYPE_ADDED: &'static str = "+";
+pub const LINE_TYPE_REMOVED: &'static str = "-";
+pub const LINE_TYPE_CONTEXT: &'static str = " ";
+pub const LINE_TYPE_EMPTY: &'static str = "\n";
+
+#[derive(Debug)]
+pub enum Error {
+    TargetWithoutSource(String),
+    UnexpectedHunk(String),
+    ExpectLine(String),
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::TargetWithoutSource(ref l) => write!(f, "Target without source: {}", l),
+            Error::UnexpectedHunk(ref l) => write!(f, "Unexpected hunk found: {}", l),
+            Error::ExpectLine(ref l) => write!(f, "Hunk line expected: {}", l),
+        }
+    }
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::TargetWithoutSource(..) => "Target without source",
+            Error::UnexpectedHunk(..) => "Unexpected hunk found",
+            Error::ExpectLine(..) => "Hunk line expected",
+        }
+    }
+}
+
+pub type Result<T> = ::std::result::Result<T, Error>;
 
 
 /// A diff line
@@ -127,6 +157,14 @@ impl Hunk {
         }
         self.lines.push(line);
     }
+
+    pub fn len(&self) -> usize {
+        self.lines.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.lines.is_empty()
+    }
 }
 
 impl fmt::Display for Hunk {
@@ -215,7 +253,7 @@ impl PatchedFile {
         !self.is_added_file() && !self.is_removed_file()
     }
 
-    fn parse_hunk(&mut self, header: &str, diff: &[(usize, &str)]) {
+    fn parse_hunk(&mut self, header_line_no: usize, header: &str, diff: &[(usize, &str)]) -> Result<()> {
         let header_info = RE_HUNK_HEADER.captures(header).unwrap();
         let source_start = header_info.at(1).unwrap().parse::<usize>().unwrap();
         let source_length = header_info.at(2).unwrap().parse::<usize>().unwrap();
@@ -241,14 +279,14 @@ impl PatchedFile {
         for &(diff_line_no, line) in diff {
             if let Some(valid_line) = RE_HUNK_BODY_LINE.captures(line) {
                 let mut line_type = valid_line.name("line_type").unwrap();
-                if line_type == LINE_TYPE_EMPTY {
+                if line_type == LINE_TYPE_EMPTY || line_type == "" {
                     line_type = LINE_TYPE_CONTEXT;
                 }
                 let value = valid_line.name("value").unwrap();
                 let mut original_line = Line {
                     source_line_no: None,
                     target_line_no: None,
-                    diff_line_no: diff_line_no,
+                    diff_line_no: diff_line_no + header_line_no + 1,
                     line_type: line_type.to_owned(),
                     value: value.to_owned(),
                 };
@@ -274,10 +312,19 @@ impl PatchedFile {
                     break;
                 }
             } else {
-                // TODO: Error hunk diff line expected
+                return Err(Error::ExpectLine(line.to_owned()));
             }
         }
         self.hunks.push(hunk);
+        Ok(())
+    }
+
+    pub fn len(&self) -> usize {
+        self.hunks.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.hunks.is_empty()
     }
 }
 
@@ -322,24 +369,27 @@ impl PatchSet {
         PatchSet { files: vec![] }
     }
 
-    pub fn parse<T: AsRef<str>>(&mut self, input: T) {
+    pub fn parse<T: AsRef<str>>(&mut self, input: T) -> Result<()> {
         let mut current_file: Option<PatchedFile> = None;
-        let diff: Vec<(usize, &str)> = input.as_ref().split('\n').skip(1).enumerate().collect();
+        let diff: Vec<(usize, &str)> = input.as_ref().split('\n').enumerate().collect();
         let mut source_file: Option<String> = None;
         let mut source_timestamp: Option<String> = None;
 
-        for &(_, line) in &diff {
+        for &(line_no, line) in &diff {
             // check for source file header
             if let Some(captures) = RE_SOURCE_FILENAME.captures(line) {
                 source_file = Some(captures.name("filename").unwrap_or("").to_owned());
                 source_timestamp = Some(captures.name("timestamp").unwrap_or("").to_owned());
+                if let Some(patched_file) = current_file {
+                    self.files.push(patched_file.clone());
+                }
                 current_file = None;
                 continue;
             }
             // check for target file header
             if let Some(captures) = RE_TARGET_FILENAME.captures(line) {
-                if current_file.is_none() {
-                    // TODO: Error target without source
+                if current_file.is_some() {
+                    return Err(Error::TargetWithoutSource(line.to_owned()));
                 }
                 let target_file = Some(captures.name("filename").unwrap_or("").to_owned());
                 let target_timestamp = Some(captures.name("timestamp").unwrap_or("").to_owned());
@@ -352,18 +402,29 @@ impl PatchSet {
                     target_timestamp: target_timestamp.clone(),
                     hunks: vec![],
                 });
-                self.files.push(current_file.clone().unwrap());
                 continue;
             }
             // check for hunk header
             if RE_HUNK_HEADER.is_match(line) {
                 if let Some(ref mut patched_file) = current_file {
-                    patched_file.parse_hunk(line, &diff);
+                    try!(patched_file.parse_hunk(line_no, line, &diff[line_no + 1..]));
                 } else {
-                    // TODO: Error unexpected hunk found
+                    return Err(Error::UnexpectedHunk(line.to_owned()));
                 }
             }
         }
+        if let Some(patched_file) = current_file {
+            self.files.push(patched_file.clone());
+        }
+        Ok(())
+    }
+
+    pub fn len(&self) -> usize {
+        self.files.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.files.is_empty()
     }
 }
 
