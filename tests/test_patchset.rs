@@ -13,7 +13,44 @@ fn test_parse_sample0_diff() {
     let mut patch = PatchSet::new();
     patch.parse(&buf).unwrap();
 
+    // three file in the patch
     assert_eq!(3, patch.len());
+    // three hunks
+    assert_eq!(3, patch[0].len());
+
+    // first file is modified
+    assert!(patch[0].is_modified_file());
+    assert!(!patch[0].is_added_file());
+    assert!(!patch[0].is_removed_file());
+
+    // Hunk 1: five additions, no deletions, a section header
+    assert_eq!(6, patch[0][0].added);
+    assert_eq!(0, patch[0][0].removed);
+    assert_eq!("Section Header", &patch[0][0].section_header);
+
+    // Hunk 2: 2 additions, 8 deletions, no section header
+    assert_eq!(2, patch[0][1].added);
+    assert_eq!(8, patch[0][1].removed);
+    assert_eq!("", &patch[0][1].section_header);
+
+    // Hunk 3: four additions, no deletions, no section header
+    assert_eq!(4, patch[0][2].added);
+    assert_eq!(0, patch[0][2].removed);
+    assert_eq!("", &patch[0][2].section_header);
+
+    // Check file totals
+    assert_eq!(12, patch[0].added());
+    assert_eq!(8, patch[0].removed());
+
+    // second file is added
+    assert!(!patch[1].is_modified_file());
+    assert!(patch[1].is_added_file());
+    assert!(!patch[1].is_removed_file());
+
+    // third file is removed
+    assert!(!patch[2].is_modified_file());
+    assert!(!patch[2].is_added_file());
+    assert!(patch[2].is_removed_file());
 }
 
 #[test]
