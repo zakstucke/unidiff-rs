@@ -22,15 +22,23 @@ lazy_static! {
     static ref RE_HUNK_BODY_LINE: Regex = Regex::new(r"^(?P<line_type>[- \n\+\\]?)(?P<value>.*)").unwrap();
 }
 
+/// Diff line is added
 pub const LINE_TYPE_ADDED: &'static str = "+";
+/// Diff line is removed
 pub const LINE_TYPE_REMOVED: &'static str = "-";
+/// Diff line is context
 pub const LINE_TYPE_CONTEXT: &'static str = " ";
+/// Diff line is empty
 pub const LINE_TYPE_EMPTY: &'static str = "\n";
 
+/// Error type
 #[derive(Debug)]
 pub enum Error {
+    /// Target without source
     TargetWithoutSource(String),
+    /// Unexpected hunk found
     UnexpectedHunk(String),
+    /// Hunk line expected
     ExpectLine(String),
 }
 
@@ -54,16 +62,22 @@ impl error::Error for Error {
     }
 }
 
+/// ``unidiff::parse`` result type
 pub type Result<T> = ::std::result::Result<T, Error>;
 
 
 /// A diff line
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Line {
+    /// Source file line number
     pub source_line_no: Option<usize>,
+    /// Target file line number
     pub target_line_no: Option<usize>,
+    /// Diff file line number
     pub diff_line_no: usize,
+    /// Diff line type
     pub line_type: String,
+    /// Diff line content value
     pub value: String,
 }
 
@@ -78,14 +92,17 @@ impl Line {
         }
     }
 
+    /// Diff line type is added
     pub fn is_added(&self) -> bool {
         LINE_TYPE_ADDED == &self.line_type
     }
 
+    /// Diff line type is removed
     pub fn is_removed(&self) -> bool {
         LINE_TYPE_REMOVED == &self.line_type
     }
 
+    /// Diff line type is context
     pub fn is_context(&self) -> bool {
         LINE_TYPE_CONTEXT == &self.line_type
     }
@@ -100,12 +117,19 @@ impl fmt::Display for Line {
 /// Each of the modified blocks of a file
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Hunk {
+    /// Count of lines added
     added: usize,
+    /// Count of lines removed
     removed: usize,
+    /// Source file starting line number
     pub source_start: usize,
+    /// Source file changes length
     pub source_length: usize,
+    /// Target file starting line number
     pub target_start: usize,
+    /// Target file changes length
     pub target_length: usize,
+    /// Section header
     pub section_header: String,
     lines: Vec<Line>,
     source: Vec<String>,
@@ -133,26 +157,32 @@ impl Hunk {
         }
     }
 
+    /// Count of lines added
     pub fn added(&self) -> usize {
         self.added
     }
 
+    /// Count of lines removed
     pub fn removed(&self) -> usize {
         self.removed
     }
 
+    /// Is this hunk valid
     pub fn is_valid(&self) -> bool {
         self.source.len() == self.source_length && self.target.len() == self.target_length
     }
 
+    /// Lines from source file
     pub fn source_lines(&self) -> Vec<Line> {
         self.lines.iter().cloned().filter(|l| l.is_context() || l.is_removed()).collect()
     }
 
+    /// Lines from target file
     pub fn target_lines(&self) -> Vec<Line> {
         self.lines.iter().cloned().filter(|l| l.is_context() || l.is_added()).collect()
     }
 
+    /// Append new line into hunk
     pub fn append(&mut self, line: Line) {
         if line.is_added() {
             self.added = self.added + 1;
@@ -167,10 +197,12 @@ impl Hunk {
         self.lines.push(line);
     }
 
+    /// Count of lines in this hunk
     pub fn len(&self) -> usize {
         self.lines.len()
     }
 
+    /// Is this hunk empty
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
@@ -215,9 +247,13 @@ impl IndexMut<usize> for Hunk {
 /// Patch updated file, contains a list of Hunks
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PatchedFile {
+    /// Source file name
     pub source_file: String,
+    /// Source file timestamp
     pub source_timestamp: Option<String>,
+    /// Target file name
     pub target_file: String,
+    /// Target file timestamp
     pub target_timestamp: Option<String>,
     hunks: Vec<Hunk>,
 }
@@ -243,6 +279,7 @@ impl PatchedFile {
         }
     }
 
+    /// Patched file relative path
     pub fn path(&self) -> String {
         if self.source_file.starts_with("a/") && self.target_file.starts_with("b/") {
             return self.source_file[2..].to_owned();
@@ -256,22 +293,27 @@ impl PatchedFile {
         self.source_file.clone()
     }
 
+    /// Count of lines added
     pub fn added(&self) -> usize {
         self.hunks.iter().map(|h| h.added).fold(0, |acc, x| acc + x)
     }
 
+    /// Count of lines removed
     pub fn removed(&self) -> usize {
         self.hunks.iter().map(|h| h.removed).fold(0, |acc, x| acc + x)
     }
 
+    /// Is this file newly added
     pub fn is_added_file(&self) -> bool {
         self.hunks.len() == 1 && self.hunks[0].source_start == 0 && self.hunks[0].source_length == 0
     }
 
+    /// Is this file removed
     pub fn is_removed_file(&self) -> bool {
         self.hunks.len() == 1 && self.hunks[0].target_start == 0 && self.hunks[0].target_length == 0
     }
 
+    /// Is this file modified
     pub fn is_modified_file(&self) -> bool {
         !self.is_added_file() && !self.is_removed_file()
     }
@@ -342,6 +384,7 @@ impl PatchedFile {
         Ok(())
     }
 
+    /// Count of hunks
     pub fn len(&self) -> usize {
         self.hunks.len()
     }
@@ -390,14 +433,17 @@ pub struct PatchSet {
 }
 
 impl PatchSet {
+    /// Added files vector
     pub fn added_files(&self) -> Vec<PatchedFile> {
         self.files.iter().cloned().filter(|f| f.is_added_file()).collect()
     }
 
+    /// Removed files vector
     pub fn removed_files(&self) -> Vec<PatchedFile> {
         self.files.iter().cloned().filter(|f| f.is_removed_file()).collect()
     }
 
+    /// Modified files vector
     pub fn modified_files(&self) -> Vec<PatchedFile> {
         self.files.iter().cloned().filter(|f| f.is_modified_file()).collect()
     }
@@ -406,6 +452,7 @@ impl PatchSet {
         PatchSet { files: vec![] }
     }
 
+    /// Parse diff input
     pub fn parse<T: AsRef<str>>(&mut self, input: T) -> Result<()> {
         let mut current_file: Option<PatchedFile> = None;
         let diff: Vec<(usize, &str)> = input.as_ref().split('\n').enumerate().collect();
@@ -456,6 +503,7 @@ impl PatchSet {
         Ok(())
     }
 
+    /// Count of patched files
     pub fn len(&self) -> usize {
         self.files.len()
     }
