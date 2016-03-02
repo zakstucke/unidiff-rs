@@ -10,6 +10,7 @@ extern crate lazy_static;
 
 use std::fmt;
 use std::error;
+use std::ops::{Index, IndexMut};
 
 use regex::Regex;
 
@@ -189,6 +190,20 @@ impl IntoIterator for Hunk {
     }
 }
 
+impl Index<usize> for Hunk {
+    type Output = Line;
+
+    fn index(&self, idx: usize) -> &Line {
+        &self.lines[idx]
+    }
+}
+
+impl IndexMut<usize> for Hunk {
+    fn index_mut(&mut self, index: usize) -> &mut Line {
+        &mut self.lines[index]
+    }
+}
+
 /// Patch updated file, contains a list of Hunks
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PatchedFile {
@@ -346,6 +361,20 @@ impl IntoIterator for PatchedFile {
     }
 }
 
+impl Index<usize> for PatchedFile {
+    type Output = Hunk;
+
+    fn index(& self, idx: usize) -> & Hunk {
+        &self.hunks[idx]
+    }
+}
+
+impl IndexMut<usize> for PatchedFile {
+    fn index_mut(&mut self, index: usize) -> &mut Hunk {
+        &mut self.hunks[index]
+    }
+}
+
 /// Unfied patchset
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PatchSet {
@@ -441,5 +470,19 @@ impl IntoIterator for PatchSet {
 
     fn into_iter(self) -> Self::IntoIter {
         self.files.into_iter()
+    }
+}
+
+impl Index<usize> for PatchSet {
+    type Output = PatchedFile;
+
+    fn index(& self, idx: usize) -> &PatchedFile {
+        &self.files[idx]
+    }
+}
+
+impl IndexMut<usize> for PatchSet {
+    fn index_mut(&mut self, index: usize) -> &mut PatchedFile {
+        &mut self.files[index]
     }
 }
