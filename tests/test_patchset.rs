@@ -24,18 +24,18 @@ fn test_parse_sample0_diff() {
     assert!(!patch[0].is_removed_file());
 
     // Hunk 1: five additions, no deletions, a section header
-    assert_eq!(6, patch[0][0].added);
-    assert_eq!(0, patch[0][0].removed);
+    assert_eq!(6, patch[0][0].added());
+    assert_eq!(0, patch[0][0].removed());
     assert_eq!("Section Header", &patch[0][0].section_header);
 
     // Hunk 2: 2 additions, 8 deletions, no section header
-    assert_eq!(2, patch[0][1].added);
-    assert_eq!(8, patch[0][1].removed);
+    assert_eq!(2, patch[0][1].added());
+    assert_eq!(8, patch[0][1].removed());
     assert_eq!("", &patch[0][1].section_header);
 
     // Hunk 3: four additions, no deletions, no section header
-    assert_eq!(4, patch[0][2].added);
-    assert_eq!(0, patch[0][2].removed);
+    assert_eq!(4, patch[0][2].added());
+    assert_eq!(0, patch[0][2].removed());
     assert_eq!("", &patch[0][2].section_header);
 
     // Check file totals

@@ -100,8 +100,8 @@ impl fmt::Display for Line {
 /// Each of the modified blocks of a file
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Hunk {
-    pub added: usize,
-    pub removed: usize,
+    added: usize,
+    removed: usize,
     pub source_start: usize,
     pub source_length: usize,
     pub target_start: usize,
@@ -131,6 +131,14 @@ impl Hunk {
             source: vec![],
             target: vec![],
         }
+    }
+
+    pub fn added(&self) -> usize {
+        self.added
+    }
+
+    pub fn removed(&self) -> usize {
+        self.removed
     }
 
     pub fn is_valid(&self) -> bool {
