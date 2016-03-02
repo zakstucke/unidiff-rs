@@ -16,7 +16,7 @@ use regex::Regex;
 lazy_static! {
     static ref RE_SOURCE_FILENAME: Regex = Regex::new(r"^--- (?P<filename>[^\t\n]+)(?:\t(?P<timestamp>[^\n]+))?").unwrap();
     static ref RE_TARGET_FILENAME: Regex = Regex::new(r"^\+\+\+ (?P<filename>[^\t\n]+)(?:\t(?P<timestamp>[^\n]+))?").unwrap();
-    static ref RE_HUNK_HEADER: Regex = Regex::new(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))?\ @@[ ]?(.*)").unwrap();
+    static ref RE_HUNK_HEADER: Regex = Regex::new(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@[ ]?(.*)").unwrap();
     static ref RE_HUNK_BODY_LINE: Regex = Regex::new(r"^(?P<line_type>[- \n\+\\])(?P<value>.*)").unwrap();
 }
 
@@ -274,7 +274,7 @@ impl PatchSet {
 
     pub fn parse<T: AsRef<str>>(&mut self, input: T) {
         let mut current_file: Option<PatchedFile> = None;
-        let diff: Vec<(usize, &str)> = input.as_ref().split("\n").skip(1).enumerate().collect();
+        let diff: Vec<(usize, &str)> = input.as_ref().split('\n').skip(1).enumerate().collect();
         let mut source_file: Option<String> = None;
         let mut source_timestamp: Option<String> = None;
 
