@@ -416,7 +416,7 @@ impl IntoIterator for PatchedFile {
 impl Index<usize> for PatchedFile {
     type Output = Hunk;
 
-    fn index(& self, idx: usize) -> & Hunk {
+    fn index(&self, idx: usize) -> &Hunk {
         &self.hunks[idx]
     }
 }
@@ -476,7 +476,9 @@ impl PatchSet {
         let input = if let Some(codec) = self.encoding {
             codec.decode(input, encoding::DecoderTrap::Ignore).unwrap()
         } else {
-            String::from_utf8(input.to_vec()).unwrap()
+            encoding::decode(input, encoding::DecoderTrap::Strict, encoding::all::UTF_8)
+                .0
+                .unwrap_or(String::from_utf8(input.to_vec()).unwrap())
         };
         self.parse(input)
     }
@@ -562,7 +564,7 @@ impl IntoIterator for PatchSet {
 impl Index<usize> for PatchSet {
     type Output = PatchedFile;
 
-    fn index(& self, idx: usize) -> &PatchedFile {
+    fn index(&self, idx: usize) -> &PatchedFile {
         &self.files[idx]
     }
 }
