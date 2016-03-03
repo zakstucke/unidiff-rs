@@ -168,3 +168,67 @@ fn test_parse_svn_diff() {
     assert_eq!(3, modified_files[0].added());
     assert_eq!(1, modified_files[0].removed());
 }
+
+#[test]
+fn test_parse_line_numbers() {
+    let mut buf = String::new();
+    File::open("tests/fixtures/sample0.diff").and_then(|mut r| r.read_to_string(&mut buf)).unwrap();
+
+    let mut patch = PatchSet::new();
+    patch.parse(&buf).unwrap();
+
+    let mut target_line_nos = vec![];
+    let mut source_line_nos = vec![];
+    let mut diff_line_nos = vec![];
+
+    for diff_file in patch {
+        for hunk in diff_file {
+            for line in hunk {
+                source_line_nos.push(line.source_line_no.clone());
+                target_line_nos.push(line.target_line_no.clone());
+                diff_line_nos.push(line.diff_line_no);
+            }
+        }
+    }
+
+    let expected_target_line_nos = vec![
+        // File: 1, Hunk: 1
+        Some(1), Some(2), Some(3), Some(4), Some(5), Some(6), Some(7), Some(8), Some(9),
+        // File: 1, Hunk: 2
+        Some(11), Some(12), Some(13), None, None, None, None, None, None, None, Some(14), Some(15), Some(16), None, Some(17), Some(18), Some(19), Some(20),
+        // File: 1, Hunk: 3
+        Some(22), Some(23), Some(24), Some(25), Some(26), Some(27), Some(28),
+        // File: 2, Hunk 1
+        Some(1), Some(2), Some(3), Some(4), Some(5), Some(6), Some(7), Some(8), Some(9),
+        // File: 3, Hunk 1
+        None, None, None, None, None, None, None, None, None,
+    ];
+    let expected_source_line_nos = vec![
+        // File: 1, Hunk: 1
+        None, None, None, None, None, None, Some(1), Some(2), Some(3),
+        // File: 1, Hunk: 2
+        Some(5), Some(6), Some(7), Some(8), Some(9), Some(10), Some(11), Some(12), Some(13), Some(14), None, Some(15), Some(16), Some(17), None, Some(18), Some(19), Some(20),
+        // File: 1, Hunk: 3
+        Some(22), Some(23), Some(24), None, None, None, None,
+        // File: 2, Hunk 1
+        None, None, None, None, None, None, None, None, None,
+        // File: 3, Hunk 1
+        Some(1), Some(2), Some(3), Some(4), Some(5), Some(6), Some(7), Some(8), Some(9),
+    ];
+    let expected_diff_line_nos = vec![
+        // File: 1, Hunk: 1
+        4, 5, 6, 7, 8, 9, 10, 11, 12,
+        // File: 1, Hunk: 2
+        14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+        // File: 1, Hunk: 3
+        33, 34, 35, 36, 37, 38, 39,
+        // File: 2, Hunk 1
+        43, 44, 45, 46, 47, 48, 49, 50, 51,
+        // File: 3, Hunk 1
+        55, 56, 57, 58, 59, 60, 61, 62, 63,
+    ];
+
+    assert_eq!(expected_source_line_nos, source_line_nos);
+    assert_eq!(expected_target_line_nos, target_line_nos);
+    assert_eq!(expected_diff_line_nos, diff_line_nos);
+}

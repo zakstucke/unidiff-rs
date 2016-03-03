@@ -318,7 +318,7 @@ impl PatchedFile {
         !self.is_added_file() && !self.is_removed_file()
     }
 
-    fn parse_hunk(&mut self, header_line_no: usize, header: &str, diff: &[(usize, &str)]) -> Result<()> {
+    fn parse_hunk(&mut self, header: &str, diff: &[(usize, &str)]) -> Result<()> {
         let header_info = RE_HUNK_HEADER.captures(header).unwrap();
         let source_start = header_info.at(1).unwrap().parse::<usize>().unwrap();
         let source_length = header_info.at(2).unwrap().parse::<usize>().unwrap();
@@ -351,7 +351,7 @@ impl PatchedFile {
                 let mut original_line = Line {
                     source_line_no: None,
                     target_line_no: None,
-                    diff_line_no: diff_line_no + header_line_no + 1,
+                    diff_line_no: diff_line_no + 1,
                     line_type: line_type.to_owned(),
                     value: value.to_owned(),
                 };
@@ -491,7 +491,7 @@ impl PatchSet {
             // check for hunk header
             if RE_HUNK_HEADER.is_match(line) {
                 if let Some(ref mut patched_file) = current_file {
-                    try!(patched_file.parse_hunk(line_no, line, &diff[line_no + 1..]));
+                    try!(patched_file.parse_hunk(line, &diff[line_no + 1..]));
                 } else {
                     return Err(Error::UnexpectedHunk(line.to_owned()));
                 }
