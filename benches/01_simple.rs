@@ -13,9 +13,9 @@ use unidiff::PatchSet;
 fn bench_parse_diff_simple(b: &mut Bencher) {
     let mut buf = String::new();
     File::open("tests/fixtures/sample0.diff").and_then(|mut r| r.read_to_string(&mut buf)).unwrap();
-    let mut patch = PatchSet::new();
 
     b.iter(|| {
+        let mut patch = PatchSet::new();
         patch.parse(&buf).unwrap();
     });
 }
