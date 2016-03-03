@@ -472,14 +472,18 @@ impl PatchSet {
         }
     }
 
+    pub fn parse_bytes(&mut self, input: &[u8]) -> Result<()> {
+        let input = if let Some(codec) = self.encoding {
+            codec.decode(input, encoding::DecoderTrap::Ignore).unwrap()
+        } else {
+            String::from_utf8(input.to_vec()).unwrap()
+        };
+        self.parse(input)
+    }
+
     /// Parse diff input
     pub fn parse<T: AsRef<str>>(&mut self, input: T) -> Result<()> {
         let input = input.as_ref();
-        let input = if let Some(codec) = self.encoding {
-            codec.decode(input.as_bytes(), encoding::DecoderTrap::Ignore).unwrap()
-        } else {
-            input.to_owned()
-        };
         let mut current_file: Option<PatchedFile> = None;
         let diff: Vec<(usize, &str)> = input.split('\n').enumerate().collect();
         let mut source_file: Option<String> = None;
