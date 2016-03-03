@@ -7,6 +7,7 @@
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
+extern crate encoding;
 
 use std::fmt;
 use std::error;
@@ -427,9 +428,10 @@ impl IndexMut<usize> for PatchedFile {
 }
 
 /// Unfied patchset
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone)]
 pub struct PatchSet {
     files: Vec<PatchedFile>,
+    encoding: Option<encoding::EncodingRef>,
 }
 
 impl PatchSet {
@@ -449,13 +451,37 @@ impl PatchSet {
     }
 
     pub fn new() -> PatchSet {
-        PatchSet { files: vec![] }
+        PatchSet {
+            files: vec![],
+            encoding: None,
+        }
+    }
+
+    pub fn with_encoding(coding: encoding::EncodingRef) -> PatchSet {
+        PatchSet {
+            files: vec![],
+            encoding: Some(coding),
+        }
+    }
+
+    pub fn from_encoding<T: AsRef<str>>(coding: T) -> PatchSet {
+        let codec = encoding::label::encoding_from_whatwg_label(coding.as_ref());
+        PatchSet {
+            files: vec![],
+            encoding: codec,
+        }
     }
 
     /// Parse diff input
     pub fn parse<T: AsRef<str>>(&mut self, input: T) -> Result<()> {
+        let input = input.as_ref();
+        let input = if let Some(codec) = self.encoding {
+            codec.decode(input.as_bytes(), encoding::DecoderTrap::Ignore).unwrap()
+        } else {
+            input.to_owned()
+        };
         let mut current_file: Option<PatchedFile> = None;
-        let diff: Vec<(usize, &str)> = input.as_ref().split('\n').enumerate().collect();
+        let diff: Vec<(usize, &str)> = input.split('\n').enumerate().collect();
         let mut source_file: Option<String> = None;
         let mut source_timestamp: Option<String> = None;
 

@@ -232,3 +232,15 @@ fn test_parse_line_numbers() {
     assert_eq!(expected_target_line_nos, target_line_nos);
     assert_eq!(expected_diff_line_nos, diff_line_nos);
 }
+
+#[test]
+fn test_parse_from_encoding() {
+    let mut buf = String::new();
+    File::open("tests/fixtures/sample3.diff").and_then(|mut r| r.read_to_string(&mut buf)).unwrap();
+
+    let mut patch = PatchSet::from_encoding("utf-8");
+    patch.parse(&buf).unwrap();
+
+    assert_eq!(3, patch.len());
+    assert_eq!("holá mundo!", patch[0][0][1].value);
+}
