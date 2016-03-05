@@ -56,7 +56,7 @@ pub const LINE_TYPE_CONTEXT: &'static str = " ";
 pub const LINE_TYPE_EMPTY: &'static str = "\n";
 
 /// Error type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
     /// Target without source
     TargetWithoutSource(String),
@@ -477,6 +477,14 @@ impl IndexMut<usize> for PatchedFile {
 pub struct PatchSet {
     files: Vec<PatchedFile>,
     encoding: Option<encoding::EncodingRef>,
+}
+
+impl fmt::Debug for PatchSet {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("PatchSet")
+           .field("files", &self.files)
+           .finish()
+    }
 }
 
 impl PatchSet {
