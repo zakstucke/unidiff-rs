@@ -1,4 +1,27 @@
 //! Unified diff parsing/metadata extraction library for Rust
+//!
+//! # Examples
+//!
+//! ```
+//! extern crate unidiff;
+//!
+//! use unidiff::PatchSet;
+//!
+//! fn main() {
+//!     let diff_str = "diff --git a/added_file b/added_file
+//! new file mode 100644
+//! index 0000000..9b710f3
+//! --- /dev/null
+//! +++ b/added_file
+//! @@ -0,0 +1,4 @@
+//! +This was missing!
+//! +Adding it now.
+//! +
+//! +Only for testing purposes.";
+//!     let mut patch = PatchSet::new();
+//!     patch.parse(diff_str).ok().expect("Error parsing diff");
+//! }
+//! ```
 #![cfg_attr(feature="clippy", feature(plugin))]
 #![cfg_attr(feature="clippy", plugin(clippy))]
 #![cfg_attr(feature="clippy", deny(clippy))]
@@ -116,6 +139,8 @@ impl fmt::Display for Line {
 }
 
 /// Each of the modified blocks of a file
+///
+/// You can iterate over it to get ``Line``s.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Hunk {
     /// Count of lines added
@@ -246,6 +271,8 @@ impl IndexMut<usize> for Hunk {
 }
 
 /// Patch updated file, contains a list of Hunks
+///
+/// You can iterate over it to get ``Hunk``s.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PatchedFile {
     /// Source file name
@@ -260,6 +287,7 @@ pub struct PatchedFile {
 }
 
 impl PatchedFile {
+    /// Initialize a new PatchedFile instance
     pub fn new<T: Into<String>>(source_file: T, target_file: T) -> PatchedFile {
         PatchedFile {
             source_file: source_file.into(),
@@ -270,6 +298,7 @@ impl PatchedFile {
         }
     }
 
+    /// Initialize a new PatchedFile instance with hunks
     pub fn with_hunks<T: Into<String>>(source_file: T, target_file: T, hunks: Vec<Hunk>) -> PatchedFile {
         PatchedFile {
             source_file: source_file.into(),
@@ -428,6 +457,22 @@ impl IndexMut<usize> for PatchedFile {
 }
 
 /// Unfied patchset
+///
+/// You can iterate over it to get ``PatchedFile``s.
+///
+/// ```ignore
+/// let mut patch = PatchSet::new();
+/// patch.parse("some diff");
+/// for patched_file in patch {
+///   // do something with patched_file
+///   for hunk in patched_file {
+///       // do something with hunk
+///       for line in hunk {
+///           // do something with line
+///       }
+///   }
+/// }
+/// ```
 #[derive(Clone)]
 pub struct PatchSet {
     files: Vec<PatchedFile>,
@@ -450,6 +495,7 @@ impl PatchSet {
         self.files.iter().cloned().filter(|f| f.is_modified_file()).collect()
     }
 
+    /// Initialize a new PatchSet instance
     pub fn new() -> PatchSet {
         PatchSet {
             files: vec![],
@@ -457,6 +503,7 @@ impl PatchSet {
         }
     }
 
+    /// Initialize a new PatchedSet instance with encoding
     pub fn with_encoding(coding: encoding::EncodingRef) -> PatchSet {
         PatchSet {
             files: vec![],
@@ -464,6 +511,7 @@ impl PatchSet {
         }
     }
 
+    /// Initialize a new PatchedSet instance with encoding(string form)
     pub fn from_encoding<T: AsRef<str>>(coding: T) -> PatchSet {
         let codec = encoding::label::encoding_from_whatwg_label(coding.as_ref());
         PatchSet {
@@ -472,6 +520,7 @@ impl PatchSet {
         }
     }
 
+    /// Parse diff from bytes
     pub fn parse_bytes(&mut self, input: &[u8]) -> Result<()> {
         let input = if let Some(codec) = self.encoding {
             codec.decode(input, encoding::DecoderTrap::Ignore).unwrap()
@@ -483,7 +532,7 @@ impl PatchSet {
         self.parse(input)
     }
 
-    /// Parse diff input
+    /// Parse diff from string
     pub fn parse<T: AsRef<str>>(&mut self, input: T) -> Result<()> {
         let input = input.as_ref();
         let mut current_file: Option<PatchedFile> = None;
