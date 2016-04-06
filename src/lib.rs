@@ -87,7 +87,7 @@ impl error::Error for Error {
     }
 }
 
-/// ``unidiff::parse`` result type
+/// `unidiff::parse` result type
 pub type Result<T> = ::std::result::Result<T, Error>;
 
 
@@ -474,7 +474,7 @@ impl IndexMut<usize> for PatchedFile {
 ///   }
 /// }
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct PatchSet {
     files: Vec<PatchedFile>,
     encoding: Option<encoding::EncodingRef>,
