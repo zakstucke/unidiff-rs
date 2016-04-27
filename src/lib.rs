@@ -24,7 +24,6 @@
 //! ```
 #![cfg_attr(feature="clippy", feature(plugin))]
 #![cfg_attr(feature="clippy", plugin(clippy))]
-#![cfg_attr(feature="clippy", deny(clippy))]
 #![cfg_attr(feature="clippy", warn(cyclomatic_complexity))]
 #![cfg_attr(feature="clippy", allow(similar_names))]
 
