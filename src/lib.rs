@@ -350,11 +350,11 @@ impl PatchedFile {
 
     fn parse_hunk(&mut self, header: &str, diff: &[(usize, &str)]) -> Result<()> {
         let header_info = RE_HUNK_HEADER.captures(header).unwrap();
-        let source_start = header_info.at(1).unwrap().parse::<usize>().unwrap();
-        let source_length = header_info.at(2).unwrap().parse::<usize>().unwrap();
-        let target_start = header_info.at(3).unwrap().parse::<usize>().unwrap();
-        let target_length = header_info.at(4).unwrap().parse::<usize>().unwrap();
-        let section_header = header_info.at(5).unwrap();
+        let source_start = header_info.get(1).unwrap().as_str().parse::<usize>().unwrap();
+        let source_length = header_info.get(2).unwrap().as_str().parse::<usize>().unwrap();
+        let target_start = header_info.get(3).unwrap().as_str().parse::<usize>().unwrap();
+        let target_length = header_info.get(4).unwrap().as_str().parse::<usize>().unwrap();
+        let section_header = header_info.get(5).unwrap().as_str();
         let mut hunk = Hunk {
             added: 0usize,
             removed: 0usize,
@@ -373,11 +373,11 @@ impl PatchedFile {
         let expected_target_end = target_start + target_length;
         for &(diff_line_no, line) in diff {
             if let Some(valid_line) = RE_HUNK_BODY_LINE.captures(line) {
-                let mut line_type = valid_line.name("line_type").unwrap();
+                let mut line_type = valid_line.name("line_type").unwrap().as_str();
                 if line_type == LINE_TYPE_EMPTY || line_type == "" {
                     line_type = LINE_TYPE_CONTEXT;
                 }
-                let value = valid_line.name("value").unwrap();
+                let value = valid_line.name("value").unwrap().as_str();
                 let mut original_line = Line {
                     source_line_no: None,
                     target_line_no: None,
@@ -551,8 +551,14 @@ impl PatchSet {
         for &(line_no, line) in &diff {
             // check for source file header
             if let Some(captures) = RE_SOURCE_FILENAME.captures(line) {
-                source_file = Some(captures.name("filename").unwrap_or("").to_owned());
-                source_timestamp = Some(captures.name("timestamp").unwrap_or("").to_owned());
+                source_file = match captures.name("filename") {
+                    Some(ref filename) => Some(filename.as_str().to_owned()),
+                    None => Some("".to_owned())
+                };
+                source_timestamp = match captures.name("timestamp") {
+                    Some(ref timestamp) => Some(timestamp.as_str().to_owned()),
+                    None => Some("".to_owned())
+                };
                 if let Some(patched_file) = current_file {
                     self.files.push(patched_file.clone());
                 }
@@ -564,8 +570,14 @@ impl PatchSet {
                 if current_file.is_some() {
                     return Err(Error::TargetWithoutSource(line.to_owned()));
                 }
-                let target_file = Some(captures.name("filename").unwrap_or("").to_owned());
-                let target_timestamp = Some(captures.name("timestamp").unwrap_or("").to_owned());
+                let target_file = match captures.name("filename") {
+                    Some(ref filename) => Some(filename.as_str().to_owned()),
+                    None => Some("".to_owned())
+                };
+                let target_timestamp = match captures.name("timestamp") {
+                    Some(ref timestamp) => Some(timestamp.as_str().to_owned()),
+                    None => Some("".to_owned())
+                };
 
                 // add current file to PatchSet
                 current_file = Some(PatchedFile {

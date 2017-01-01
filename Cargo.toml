@@ -13,7 +13,7 @@ version = "0.1.6"
 [dependencies]
 encoding = "0.2"
 lazy_static = "0.2"
-regex = "0.1"
+regex = "0.2"
 
 [dependencies.clippy]
 optional = true
