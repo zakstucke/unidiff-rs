@@ -25,7 +25,7 @@ To generate crate documentation locally, run:
 $ cargo doc
 ```
 
-Then you will be able to open the documentation under ``target/doc/bosonnlp`` directory.
+Then you will be able to open the documentation under ``target/doc/unidiff`` directory.
 
 Also you can read it [online](http://messense.github.io/unidiff-rs/unidiff/index.html).
 
