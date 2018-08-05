@@ -1,14 +1,10 @@
 extern crate unidiff;
 
-use std::io::prelude::*;
-use std::fs::File;
-
 use unidiff::PatchSet;
 
 #[test]
 fn test_parse_sample0_diff() {
-    let mut buf = String::new();
-    File::open("tests/fixtures/sample0.diff").and_then(|mut r| r.read_to_string(&mut buf)).unwrap();
+    let buf = include_str!("fixtures/sample0.diff");
 
     let mut patch = PatchSet::new();
     patch.parse(&buf).unwrap();
@@ -55,8 +51,7 @@ fn test_parse_sample0_diff() {
 
 #[test]
 fn test_parse_git_diff() {
-    let mut buf = String::new();
-    File::open("tests/fixtures/git.diff").and_then(|mut r| r.read_to_string(&mut buf)).unwrap();
+    let buf = include_str!("fixtures/git.diff");
 
     let mut patch = PatchSet::new();
     patch.parse(&buf).unwrap();
@@ -84,8 +79,7 @@ fn test_parse_git_diff() {
 
 #[test]
 fn test_parse_bzr_diff() {
-    let mut buf = String::new();
-    File::open("tests/fixtures/bzr.diff").and_then(|mut r| r.read_to_string(&mut buf)).unwrap();
+    let buf = include_str!("fixtures/bzr.diff");
 
     let mut patch = PatchSet::new();
     patch.parse(&buf).unwrap();
@@ -113,8 +107,7 @@ fn test_parse_bzr_diff() {
 
 #[test]
 fn test_parse_hg_diff() {
-    let mut buf = String::new();
-    File::open("tests/fixtures/hg.diff").and_then(|mut r| r.read_to_string(&mut buf)).unwrap();
+    let buf = include_str!("fixtures/hg.diff");
 
     let mut patch = PatchSet::new();
     patch.parse(&buf).unwrap();
@@ -142,8 +135,7 @@ fn test_parse_hg_diff() {
 
 #[test]
 fn test_parse_svn_diff() {
-    let mut buf = String::new();
-    File::open("tests/fixtures/svn.diff").and_then(|mut r| r.read_to_string(&mut buf)).unwrap();
+    let buf = include_str!("fixtures/svn.diff");
 
     let mut patch = PatchSet::new();
     patch.parse(&buf).unwrap();
@@ -171,8 +163,7 @@ fn test_parse_svn_diff() {
 
 #[test]
 fn test_parse_line_numbers() {
-    let mut buf = String::new();
-    File::open("tests/fixtures/sample0.diff").and_then(|mut r| r.read_to_string(&mut buf)).unwrap();
+    let buf = include_str!("fixtures/sample0.diff");
 
     let mut patch = PatchSet::new();
     patch.parse(&buf).unwrap();
@@ -235,11 +226,10 @@ fn test_parse_line_numbers() {
 
 #[test]
 fn test_parse_from_encoding() {
-    let mut buf = Vec::new();
-    File::open("tests/fixtures/sample3.diff").and_then(|mut r| r.read_to_end(&mut buf)).unwrap();
+    let buf = include_bytes!("fixtures/sample3.diff");
 
     let mut patch = PatchSet::from_encoding("utf-8");
-    patch.parse_bytes(&buf).unwrap();
+    patch.parse_bytes(buf).unwrap();
 
     assert_eq!(3, patch.len());
     assert_eq!("holá mundo!", patch[0][0][1].value);
