@@ -25,7 +25,7 @@
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
-extern crate encoding;
+extern crate encoding_rs;
 
 use std::fmt;
 use std::error;
@@ -468,10 +468,10 @@ impl IndexMut<usize> for PatchedFile {
 ///   }
 /// }
 /// ```
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct PatchSet {
     files: Vec<PatchedFile>,
-    encoding: Option<encoding::EncodingRef>,
+    encoding: &'static encoding_rs::Encoding,
 }
 
 impl fmt::Debug for PatchSet {
@@ -502,36 +502,34 @@ impl PatchSet {
     pub fn new() -> PatchSet {
         PatchSet {
             files: vec![],
-            encoding: None,
+            encoding: encoding_rs::UTF_8,
         }
     }
 
     /// Initialize a new PatchedSet instance with encoding
-    pub fn with_encoding(coding: encoding::EncodingRef) -> PatchSet {
+    pub fn with_encoding(coding: &'static encoding_rs::Encoding) -> PatchSet {
         PatchSet {
             files: vec![],
-            encoding: Some(coding),
+            encoding: coding,
         }
     }
 
     /// Initialize a new PatchedSet instance with encoding(string form)
     pub fn from_encoding<T: AsRef<str>>(coding: T) -> PatchSet {
-        let codec = encoding::label::encoding_from_whatwg_label(coding.as_ref());
+        let codec = encoding_rs::Encoding::for_label(coding.as_ref().as_bytes());
         PatchSet {
             files: vec![],
-            encoding: codec,
+            encoding: codec.unwrap_or(encoding_rs::UTF_8),
         }
     }
 
     /// Parse diff from bytes
     pub fn parse_bytes(&mut self, input: &[u8]) -> Result<()> {
-        let input = if let Some(codec) = self.encoding {
-            codec.decode(input, encoding::DecoderTrap::Ignore).unwrap()
-        } else {
-            encoding::decode(input, encoding::DecoderTrap::Strict, encoding::all::UTF_8)
-                .0
-                .unwrap_or(String::from_utf8(input.to_vec()).unwrap())
-        };
+        let input = self
+            .encoding
+            .decode(input)
+            .0
+            .to_string();
         self.parse(input)
     }
 
