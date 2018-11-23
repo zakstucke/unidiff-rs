@@ -84,7 +84,6 @@ impl error::Error for Error {
 /// `unidiff::parse` result type
 pub type Result<T> = ::std::result::Result<T, Error>;
 
-
 /// A diff line
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Line {
@@ -479,6 +478,12 @@ impl fmt::Debug for PatchSet {
         fmt.debug_struct("PatchSet")
            .field("files", &self.files)
            .finish()
+    }
+}
+
+impl Default for PatchSet {
+    fn default() -> PatchSet {
+        PatchSet::new()
     }
 }
 
