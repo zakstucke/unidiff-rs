@@ -234,3 +234,35 @@ fn test_parse_from_encoding() {
     assert_eq!(3, patch.len());
     assert_eq!("holá mundo!", patch[0][0][1].value);
 }
+
+#[test]
+fn test_single_line_diff() {
+    {
+        let buf = include_str!("fixtures/sample4.diff");
+
+        let mut patch = PatchSet::new();
+        patch.parse(&buf).unwrap();
+
+        assert_eq!(1, patch.len());
+
+        let added_files = patch.added_files();
+        assert_eq!(1, added_files.len());
+        assert_eq!("sample.txt", added_files[0].path());
+        assert_eq!(1, added_files[0].added());
+        assert_eq!(0, added_files[0].removed());
+    }
+    {
+        let buf = include_str!("fixtures/sample5.diff");
+
+        let mut patch = PatchSet::new();
+        patch.parse(&buf).unwrap();
+
+        assert_eq!(1, patch.len());
+
+        let removed_files = patch.removed_files();
+        assert_eq!(1, removed_files.len());
+        assert_eq!("sample.txt", removed_files[0].path());
+        assert_eq!(0, removed_files[0].added());
+        assert_eq!(1, removed_files[0].removed());
+    }
+}
