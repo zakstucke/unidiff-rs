@@ -2,7 +2,6 @@ extern crate unidiff;
 
 use unidiff::{Hunk, PatchedFile};
 
-
 #[test]
 fn test_is_added_file() {
     let hunk = Hunk::new(0, 0, 0, 1, "");

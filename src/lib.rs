@@ -27,12 +27,11 @@ extern crate regex;
 extern crate lazy_static;
 extern crate encoding_rs;
 
-use std::fmt;
 use std::error;
+use std::fmt;
 use std::ops::{Index, IndexMut};
 
 use regex::Regex;
-
 
 lazy_static! {
     static ref RE_SOURCE_FILENAME: Regex = Regex::new(r"^--- (?P<filename>[^\t\n]+)(?:\t(?P<timestamp>[^\n]+))?").unwrap();
@@ -157,12 +156,13 @@ pub struct Hunk {
 }
 
 impl Hunk {
-    pub fn new<T: Into<String>>(source_start: usize,
-                                source_length: usize,
-                                target_start: usize,
-                                target_length: usize,
-                                section_header: T)
-                                -> Hunk {
+    pub fn new<T: Into<String>>(
+        source_start: usize,
+        source_length: usize,
+        target_start: usize,
+        target_length: usize,
+        section_header: T,
+    ) -> Hunk {
         Hunk {
             added: 0usize,
             removed: 0usize,
@@ -194,25 +194,37 @@ impl Hunk {
 
     /// Lines from source file
     pub fn source_lines(&self) -> Vec<Line> {
-        self.lines.iter().cloned().filter(|l| l.is_context() || l.is_removed()).collect()
+        self.lines
+            .iter()
+            .cloned()
+            .filter(|l| l.is_context() || l.is_removed())
+            .collect()
     }
 
     /// Lines from target file
     pub fn target_lines(&self) -> Vec<Line> {
-        self.lines.iter().cloned().filter(|l| l.is_context() || l.is_added()).collect()
+        self.lines
+            .iter()
+            .cloned()
+            .filter(|l| l.is_context() || l.is_added())
+            .collect()
     }
 
     /// Append new line into hunk
     pub fn append(&mut self, line: Line) {
         if line.is_added() {
             self.added = self.added + 1;
-            self.target.push(format!("{}{}", line.line_type, line.value));
+            self.target
+                .push(format!("{}{}", line.line_type, line.value));
         } else if line.is_removed() {
             self.removed = self.removed + 1;
-            self.source.push(format!("{}{}", line.line_type, line.value));
+            self.source
+                .push(format!("{}{}", line.line_type, line.value));
         } else if line.is_context() {
-            self.source.push(format!("{}{}", line.line_type, line.value));
-            self.target.push(format!("{}{}", line.line_type, line.value));
+            self.source
+                .push(format!("{}{}", line.line_type, line.value));
+            self.target
+                .push(format!("{}{}", line.line_type, line.value));
         }
         self.lines.push(line);
     }
@@ -230,13 +242,20 @@ impl Hunk {
 
 impl fmt::Display for Hunk {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let header = format!("@@ -{},{} +{},{} @@ {}\n",
-                             self.source_start,
-                             self.source_length,
-                             self.target_start,
-                             self.target_length,
-                             self.section_header);
-        let content = self.lines.iter().map(|l| l.to_string()).collect::<Vec<String>>().join("\n");
+        let header = format!(
+            "@@ -{},{} +{},{} @@ {}\n",
+            self.source_start,
+            self.source_length,
+            self.target_start,
+            self.target_length,
+            self.section_header
+        );
+        let content = self
+            .lines
+            .iter()
+            .map(|l| l.to_string())
+            .collect::<Vec<String>>()
+            .join("\n");
         write!(f, "{}{}", header, content)
     }
 }
@@ -293,7 +312,11 @@ impl PatchedFile {
     }
 
     /// Initialize a new PatchedFile instance with hunks
-    pub fn with_hunks<T: Into<String>>(source_file: T, target_file: T, hunks: Vec<Hunk>) -> PatchedFile {
+    pub fn with_hunks<T: Into<String>>(
+        source_file: T,
+        target_file: T,
+        hunks: Vec<Hunk>,
+    ) -> PatchedFile {
         PatchedFile {
             source_file: source_file.into(),
             target_file: target_file.into(),
@@ -324,7 +347,10 @@ impl PatchedFile {
 
     /// Count of lines removed
     pub fn removed(&self) -> usize {
-        self.hunks.iter().map(|h| h.removed).fold(0, |acc, x| acc + x)
+        self.hunks
+            .iter()
+            .map(|h| h.removed)
+            .fold(0, |acc, x| acc + x)
     }
 
     /// Is this file newly added
@@ -344,11 +370,29 @@ impl PatchedFile {
 
     fn parse_hunk(&mut self, header: &str, diff: &[(usize, &str)]) -> Result<()> {
         let header_info = RE_HUNK_HEADER.captures(header).unwrap();
-        let source_start = header_info.name("source_start").map_or("0", |s|s.as_str()).parse::<usize>().unwrap();
-        let source_length = header_info.name("source_length").map_or("0", |s|s.as_str()).parse::<usize>().unwrap();
-        let target_start = header_info.name("target_start").map_or("0", |s|s.as_str()).parse::<usize>().unwrap();
-        let target_length = header_info.name("target_length").map_or("0", |s|s.as_str()).parse::<usize>().unwrap();
-        let section_header = header_info.name("section_header").map_or("", |s|s.as_str());
+        let source_start = header_info
+            .name("source_start")
+            .map_or("0", |s| s.as_str())
+            .parse::<usize>()
+            .unwrap();
+        let source_length = header_info
+            .name("source_length")
+            .map_or("0", |s| s.as_str())
+            .parse::<usize>()
+            .unwrap();
+        let target_start = header_info
+            .name("target_start")
+            .map_or("0", |s| s.as_str())
+            .parse::<usize>()
+            .unwrap();
+        let target_length = header_info
+            .name("target_length")
+            .map_or("0", |s| s.as_str())
+            .parse::<usize>()
+            .unwrap();
+        let section_header = header_info
+            .name("section_header")
+            .map_or("", |s| s.as_str());
         let mut hunk = Hunk {
             added: 0usize,
             removed: 0usize,
@@ -422,7 +466,12 @@ impl fmt::Display for PatchedFile {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let source = format!("--- {}\n", self.source_file);
         let target = format!("+++ {}\n", self.target_file);
-        let hunks = self.hunks.iter().map(|h| h.to_string()).collect::<Vec<String>>().join("\n");
+        let hunks = self
+            .hunks
+            .iter()
+            .map(|h| h.to_string())
+            .collect::<Vec<String>>()
+            .join("\n");
         write!(f, "{}{}{}", source, target, hunks)
     }
 }
@@ -476,8 +525,8 @@ pub struct PatchSet {
 impl fmt::Debug for PatchSet {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("PatchSet")
-           .field("files", &self.files)
-           .finish()
+            .field("files", &self.files)
+            .finish()
     }
 }
 
@@ -490,17 +539,29 @@ impl Default for PatchSet {
 impl PatchSet {
     /// Added files vector
     pub fn added_files(&self) -> Vec<PatchedFile> {
-        self.files.iter().cloned().filter(|f| f.is_added_file()).collect()
+        self.files
+            .iter()
+            .cloned()
+            .filter(|f| f.is_added_file())
+            .collect()
     }
 
     /// Removed files vector
     pub fn removed_files(&self) -> Vec<PatchedFile> {
-        self.files.iter().cloned().filter(|f| f.is_removed_file()).collect()
+        self.files
+            .iter()
+            .cloned()
+            .filter(|f| f.is_removed_file())
+            .collect()
     }
 
     /// Modified files vector
     pub fn modified_files(&self) -> Vec<PatchedFile> {
-        self.files.iter().cloned().filter(|f| f.is_modified_file()).collect()
+        self.files
+            .iter()
+            .cloned()
+            .filter(|f| f.is_modified_file())
+            .collect()
     }
 
     /// Initialize a new PatchSet instance
@@ -530,11 +591,7 @@ impl PatchSet {
 
     /// Parse diff from bytes
     pub fn parse_bytes(&mut self, input: &[u8]) -> Result<()> {
-        let input = self
-            .encoding
-            .decode(input)
-            .0
-            .to_string();
+        let input = self.encoding.decode(input).0.to_string();
         self.parse(input)
     }
 
@@ -551,11 +608,11 @@ impl PatchSet {
             if let Some(captures) = RE_SOURCE_FILENAME.captures(line) {
                 source_file = match captures.name("filename") {
                     Some(ref filename) => Some(filename.as_str().to_owned()),
-                    None => Some("".to_owned())
+                    None => Some("".to_owned()),
                 };
                 source_timestamp = match captures.name("timestamp") {
                     Some(ref timestamp) => Some(timestamp.as_str().to_owned()),
-                    None => Some("".to_owned())
+                    None => Some("".to_owned()),
                 };
                 if let Some(patched_file) = current_file {
                     self.files.push(patched_file.clone());
@@ -570,11 +627,11 @@ impl PatchSet {
                 }
                 let target_file = match captures.name("filename") {
                     Some(ref filename) => Some(filename.as_str().to_owned()),
-                    None => Some("".to_owned())
+                    None => Some("".to_owned()),
                 };
                 let target_timestamp = match captures.name("timestamp") {
                     Some(ref timestamp) => Some(timestamp.as_str().to_owned()),
-                    None => Some("".to_owned())
+                    None => Some("".to_owned()),
                 };
 
                 // add current file to PatchSet
@@ -614,7 +671,12 @@ impl PatchSet {
 
 impl fmt::Display for PatchSet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let diff = self.files.iter().map(|f| f.to_string()).collect::<Vec<String>>().join("\n");
+        let diff = self
+            .files
+            .iter()
+            .map(|f| f.to_string())
+            .collect::<Vec<String>>()
+            .join("\n");
         write!(f, "{}", diff)
     }
 }

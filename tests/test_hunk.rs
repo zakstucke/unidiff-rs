@@ -1,7 +1,6 @@
 extern crate unidiff;
 
-use unidiff::{Line, Hunk};
-
+use unidiff::{Hunk, Line};
 
 #[test]
 fn test_default_is_valid() {
