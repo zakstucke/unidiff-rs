@@ -37,7 +37,7 @@ use regex::Regex;
 lazy_static! {
     static ref RE_SOURCE_FILENAME: Regex = Regex::new(r"^--- (?P<filename>[^\t\n]+)(?:\t(?P<timestamp>[^\n]+))?").unwrap();
     static ref RE_TARGET_FILENAME: Regex = Regex::new(r"^\+\+\+ (?P<filename>[^\t\n]+)(?:\t(?P<timestamp>[^\n]+))?").unwrap();
-    static ref RE_HUNK_HEADER: Regex = Regex::new(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@[ ]?(.*)").unwrap();
+    static ref RE_HUNK_HEADER: Regex = Regex::new(r"^@@ -(?P<source_start>\d+)(?:,(?P<source_length>\d+))? \+(?P<target_start>\d+)(?:,(?P<target_length>\d+))? @@[ ]?(?P<section_header>.*)").unwrap();
     static ref RE_HUNK_BODY_LINE: Regex = Regex::new(r"^(?P<line_type>[- \n\+\\]?)(?P<value>.*)").unwrap();
 }
 
@@ -344,11 +344,11 @@ impl PatchedFile {
 
     fn parse_hunk(&mut self, header: &str, diff: &[(usize, &str)]) -> Result<()> {
         let header_info = RE_HUNK_HEADER.captures(header).unwrap();
-        let source_start = header_info.get(1).unwrap().as_str().parse::<usize>().unwrap();
-        let source_length = header_info.get(2).unwrap().as_str().parse::<usize>().unwrap();
-        let target_start = header_info.get(3).unwrap().as_str().parse::<usize>().unwrap();
-        let target_length = header_info.get(4).unwrap().as_str().parse::<usize>().unwrap();
-        let section_header = header_info.get(5).unwrap().as_str();
+        let source_start = header_info.name("source_start").map_or("0", |s|s.as_str()).parse::<usize>().unwrap();
+        let source_length = header_info.name("source_length").map_or("0", |s|s.as_str()).parse::<usize>().unwrap();
+        let target_start = header_info.name("target_start").map_or("0", |s|s.as_str()).parse::<usize>().unwrap();
+        let target_length = header_info.name("target_length").map_or("0", |s|s.as_str()).parse::<usize>().unwrap();
+        let section_header = header_info.name("section_header").map_or("", |s|s.as_str());
         let mut hunk = Hunk {
             added: 0usize,
             removed: 0usize,
