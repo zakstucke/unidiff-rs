@@ -647,7 +647,7 @@ impl PatchSet {
             // check for hunk header
             if RE_HUNK_HEADER.is_match(line) {
                 if let Some(ref mut patched_file) = current_file {
-                    try!(patched_file.parse_hunk(line, &diff[line_no + 1..]));
+                    patched_file.parse_hunk(line, &diff[line_no + 1..])?;
                 } else {
                     return Err(Error::UnexpectedHunk(line.to_owned()));
                 }
