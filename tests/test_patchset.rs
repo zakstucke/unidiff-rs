@@ -357,3 +357,15 @@ fn test_single_line_diff() {
         assert_eq!(1, removed_files[0].removed());
     }
 }
+
+#[test]
+fn test_parse_patchset_from_str() {
+    let buf = include_str!("fixtures/sample0.diff");
+
+    let patch: PatchSet = buf.parse().unwrap();
+
+    // three file in the patch
+    assert_eq!(3, patch.len());
+    // three hunks
+    assert_eq!(3, patch[0].len());
+}

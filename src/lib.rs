@@ -30,6 +30,7 @@ extern crate encoding_rs;
 use std::error;
 use std::fmt;
 use std::ops::{Index, IndexMut};
+use std::str::FromStr;
 
 use regex::Regex;
 
@@ -701,5 +702,15 @@ impl Index<usize> for PatchSet {
 impl IndexMut<usize> for PatchSet {
     fn index_mut(&mut self, index: usize) -> &mut PatchedFile {
         &mut self.files[index]
+    }
+}
+
+impl FromStr for PatchSet {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let mut patch = PatchSet::new();
+        patch.parse(s)?;
+        Ok(patch)
     }
 }
