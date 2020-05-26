@@ -315,6 +315,7 @@ fn test_parse_line_numbers() {
     assert_eq!(expected_diff_line_nos, diff_line_nos);
 }
 
+#[cfg(feature = "encoding")]
 #[test]
 fn test_parse_from_encoding() {
     let buf = include_bytes!("fixtures/sample3.diff");

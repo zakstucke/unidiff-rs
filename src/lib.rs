@@ -22,10 +22,7 @@
 //!     patch.parse(diff_str).ok().expect("Error parsing diff");
 //! }
 //! ```
-extern crate regex;
-#[macro_use]
-extern crate lazy_static;
-extern crate encoding_rs;
+use lazy_static::lazy_static;
 
 use std::error;
 use std::fmt;
@@ -520,6 +517,7 @@ impl IndexMut<usize> for PatchedFile {
 #[derive(Clone)]
 pub struct PatchSet {
     files: Vec<PatchedFile>,
+    #[cfg(feature = "encoding")]
     encoding: &'static encoding_rs::Encoding,
 }
 
@@ -569,11 +567,13 @@ impl PatchSet {
     pub fn new() -> PatchSet {
         PatchSet {
             files: vec![],
+            #[cfg(feature = "encoding")]
             encoding: encoding_rs::UTF_8,
         }
     }
 
     /// Initialize a new PatchedSet instance with encoding
+    #[cfg(feature = "encoding")]
     pub fn with_encoding(coding: &'static encoding_rs::Encoding) -> PatchSet {
         PatchSet {
             files: vec![],
@@ -582,6 +582,7 @@ impl PatchSet {
     }
 
     /// Initialize a new PatchedSet instance with encoding(string form)
+    #[cfg(feature = "encoding")]
     pub fn from_encoding<T: AsRef<str>>(coding: T) -> PatchSet {
         let codec = encoding_rs::Encoding::for_label(coding.as_ref().as_bytes());
         PatchSet {
@@ -591,6 +592,7 @@ impl PatchSet {
     }
 
     /// Parse diff from bytes
+    #[cfg(feature = "encoding")]
     pub fn parse_bytes(&mut self, input: &[u8]) -> Result<()> {
         let input = self.encoding.decode(input).0.to_string();
         self.parse(input)
