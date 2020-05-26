@@ -236,6 +236,15 @@ impl Hunk {
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
+
+    /// Lines in this hunk
+    pub fn lines(&self) -> &[Line] {
+        &self.lines
+    }
+
+    pub fn lines_mut(&mut self) -> &mut [Line] {
+        &mut self.lines
+    }
 }
 
 impl fmt::Display for Hunk {
@@ -458,6 +467,15 @@ impl PatchedFile {
     pub fn is_empty(&self) -> bool {
         self.hunks.is_empty()
     }
+
+    /// Hunks in this file
+    pub fn hunks(&self) -> &[Hunk] {
+        &self.hunks
+    }
+
+    pub fn hunks_mut(&mut self) -> &mut [Hunk] {
+        &mut self.hunks
+    }
 }
 
 impl fmt::Display for PatchedFile {
@@ -669,6 +687,15 @@ impl PatchSet {
 
     pub fn is_empty(&self) -> bool {
         self.files.is_empty()
+    }
+
+    /// Files in this patch set
+    pub fn files(&self) -> &[PatchedFile] {
+        &self.files
+    }
+
+    pub fn files_mut(&mut self) -> &mut [PatchedFile] {
+        &mut self.files
     }
 }
 
