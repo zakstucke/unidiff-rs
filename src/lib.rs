@@ -620,7 +620,7 @@ impl PatchSet {
     pub fn parse<T: AsRef<str>>(&mut self, input: T) -> Result<()> {
         let input = input.as_ref();
         let mut current_file: Option<PatchedFile> = None;
-        let diff: Vec<(usize, &str)> = input.split('\n').enumerate().collect();
+        let diff: Vec<(usize, &str)> = input.lines().enumerate().collect();
         let mut source_file: Option<String> = None;
         let mut source_timestamp: Option<String> = None;
 
