@@ -360,6 +360,24 @@ fn test_single_line_diff() {
 }
 
 #[test]
+fn test_single_line_diff_with_trailer() {
+    {
+        let buf = include_str!("fixtures/sample4-plus.diff");
+
+        let mut patch = PatchSet::new();
+        patch.parse(&buf).unwrap();
+
+        assert_eq!(3, patch.len());
+
+        let added_files = patch.added_files();
+        assert_eq!(3, added_files.len());
+        assert_eq!("sample.txt", added_files[0].path());
+        assert_eq!(1, added_files[0].added());
+        assert_eq!(0, added_files[0].removed());
+    }
+}
+
+#[test]
 fn test_parse_patchset_from_str() {
     let buf = include_str!("fixtures/sample0.diff");
 
