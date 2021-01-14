@@ -448,7 +448,8 @@ impl PatchedFile {
                     _ => {}
                 }
                 hunk.append(original_line);
-                if source_line_no == expected_source_end && target_line_no == expected_target_end {
+                if source_line_no >= expected_source_end && target_line_no >= expected_target_end {
+                    // FIXME: sync with upstream version
                     break;
                 }
             } else {
@@ -637,8 +638,8 @@ impl PatchSet {
                 };
                 if let Some(patched_file) = current_file {
                     self.files.push(patched_file.clone());
+                    current_file = None;
                 }
-                current_file = None;
                 continue;
             }
             // check for target file header
@@ -661,7 +662,7 @@ impl PatchSet {
                     target_file: target_file.clone().unwrap(),
                     source_timestamp: source_timestamp.clone(),
                     target_timestamp: target_timestamp.clone(),
-                    hunks: vec![],
+                    hunks: Vec::new(),
                 });
                 continue;
             }
