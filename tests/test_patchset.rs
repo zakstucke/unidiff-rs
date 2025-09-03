@@ -3,19 +3,34 @@ extern crate unidiff;
 use unidiff::PatchSet;
 
 #[test]
+fn test_renamed_diff() {
+    let buf = include_str!("fixtures/renamed.diff");
+
+    let mut patch = PatchSet::new();
+    patch.parse(&buf).unwrap();
+
+    assert_eq!(1, patch.len());
+    assert!(patch[0].is_renamed_file());
+    assert_eq!(patch[0].source_file, "a/foo/bar/baz/bash.rs".to_string());
+    assert_eq!(patch[0].target_file, "b/lol/loo/lee/lah.rs".to_string());
+    assert!(!patch[0].is_modified_file());
+}
+
+#[test]
 fn test_parse_sample0_diff() {
     let buf = include_str!("fixtures/sample0.diff");
 
     let mut patch = PatchSet::new();
     patch.parse(&buf).unwrap();
 
-    // three file in the patch
-    assert_eq!(3, patch.len());
+    // four files in the patch
+    assert_eq!(4, patch.len());
     // three hunks
     assert_eq!(3, patch[0].len());
 
-    // first file is modified
+    // first file is modified and renamed:
     assert!(patch[0].is_modified_file());
+    assert!(patch[0].is_renamed_file());
     assert!(!patch[0].is_added_file());
     assert!(!patch[0].is_removed_file());
 
@@ -40,13 +55,21 @@ fn test_parse_sample0_diff() {
 
     // second file is added
     assert!(!patch[1].is_modified_file());
+    assert!(!patch[1].is_renamed_file());
     assert!(patch[1].is_added_file());
     assert!(!patch[1].is_removed_file());
 
     // third file is removed
     assert!(!patch[2].is_modified_file());
+    assert!(!patch[2].is_renamed_file());
     assert!(!patch[2].is_added_file());
     assert!(patch[2].is_removed_file());
+
+    // forth file is modified but not renamed:
+    assert!(patch[3].is_modified_file());
+    assert!(!patch[3].is_renamed_file());
+    assert!(!patch[3].is_added_file());
+    assert!(!patch[3].is_removed_file());
 }
 
 #[test]

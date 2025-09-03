@@ -32,6 +32,7 @@ use std::str::FromStr;
 use regex::Regex;
 
 lazy_static! {
+    static ref RE_DIFF_GIT_HEADER: Regex = Regex::new(r"^diff --git (?P<source_file>[^\s]+) (?P<target_file>[^\s]+)").unwrap();
     static ref RE_SOURCE_FILENAME: Regex = Regex::new(r"^--- (?P<filename>[^\t\n]+)(?:\t(?P<timestamp>[^\n]+))?").unwrap();
     static ref RE_TARGET_FILENAME: Regex = Regex::new(r"^\+\+\+ (?P<filename>[^\t\n]+)(?:\t(?P<timestamp>[^\n]+))?").unwrap();
     static ref RE_HUNK_HEADER: Regex = Regex::new(r"^@@ -(?P<source_start>\d+)(?:,(?P<source_length>\d+))? \+(?P<target_start>\d+)(?:,(?P<target_length>\d+))? @@[ ]?(?P<section_header>.*)").unwrap();
@@ -372,7 +373,15 @@ impl PatchedFile {
 
     /// Is this file modified
     pub fn is_modified_file(&self) -> bool {
-        !self.is_added_file() && !self.is_removed_file()
+        (!self.is_added_file() && !self.is_removed_file())
+            && (!self.hunks.is_empty() || !self.is_renamed_file())
+    }
+
+    /// Is this file renamed
+    pub fn is_renamed_file(&self) -> bool {
+        self.source_file.trim_start_matches("a/") != self.target_file.trim_start_matches("b/")
+            && self.source_file != "/dev/null"
+            && self.target_file != "/dev/null"
     }
 
     fn parse_hunk(&mut self, header: &str, diff: &[(usize, &str)]) -> Result<()> {
@@ -622,12 +631,46 @@ impl PatchSet {
         let input = input.as_ref();
         let mut current_file: Option<PatchedFile> = None;
         let diff: Vec<(usize, &str)> = input.lines().enumerate().collect();
+
+        let mut git_header_found = false;
         let mut source_file: Option<String> = None;
         let mut source_timestamp: Option<String> = None;
 
+        macro_rules! flush {
+            () => {
+                if let Some(patched_file) = current_file.take() {
+                    self.files.push(patched_file);
+                    git_header_found = false;
+                    source_file = None;
+                    source_timestamp = None;
+                    current_file = None;
+                }
+            };
+        }
+
         for &(line_no, line) in &diff {
+            if let Some(captures) = RE_DIFF_GIT_HEADER.captures(line) {
+                flush!();
+
+                // add current file to PatchSet
+                current_file = Some(PatchedFile {
+                    source_file: captures.name("source_file").unwrap().as_str().to_owned(),
+                    target_file: captures.name("target_file").unwrap().as_str().to_owned(),
+                    source_timestamp: None,
+                    target_timestamp: None,
+                    hunks: Vec::new(),
+                });
+                git_header_found = true;
+
+                continue;
+            }
+
             // check for source file header
             if let Some(captures) = RE_SOURCE_FILENAME.captures(line) {
+                if !git_header_found {
+                    flush!();
+                }
+
                 source_file = match captures.name("filename") {
                     Some(ref filename) => Some(filename.as_str().to_owned()),
                     None => Some("".to_owned()),
@@ -636,15 +679,12 @@ impl PatchSet {
                     Some(ref timestamp) => Some(timestamp.as_str().to_owned()),
                     None => Some("".to_owned()),
                 };
-                if let Some(patched_file) = current_file {
-                    self.files.push(patched_file.clone());
-                    current_file = None;
-                }
+
                 continue;
             }
             // check for target file header
             if let Some(captures) = RE_TARGET_FILENAME.captures(line) {
-                if current_file.is_some() {
+                if !git_header_found && current_file.is_some() {
                     return Err(Error::TargetWithoutSource(line.to_owned()));
                 }
                 let target_file = match captures.name("filename") {
@@ -675,9 +715,7 @@ impl PatchSet {
                 }
             }
         }
-        if let Some(patched_file) = current_file {
-            self.files.push(patched_file.clone());
-        }
+        flush!();
         Ok(())
     }
 
